@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}DepremDB{% endblock %}</title>
+  
+  <!-- 1. CSS DOSYALARI -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+  
+  <!-- DataTables ve Buttons CSS -->
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+  <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.bootstrap5.min.css">
+
+  <style>
+    body{background:#0f0f1a;color:#e0e0e0;font-family:'Segoe UI',sans-serif;}
+    .sidebar{min-height:100vh;background:linear-gradient(180deg,#1a1a2e,#16213e);width:240px;border-right:1px solid #2a2a4a;position:fixed;top:0;left:0;z-index:100;display:flex;flex-direction:column;}
+    .sidebar .brand{padding:1.2rem 1rem;border-bottom:1px solid #2a2a4a;}
+    .sidebar .brand h5{color:#fff;font-weight:800;margin:0;}
+    .sidebar .nav-link{color:#9090b0;border-radius:8px;margin:2px 8px;padding:10px 14px;transition:all .2s;font-size:.88rem;}
+    .sidebar .nav-link:hover{background:#e94560;color:#fff;transform:translateX(3px);}
+    .sidebar .nav-link i{margin-right:8px;width:16px;}
+    .sidebar .nav-section{color:#444;font-size:.68rem;text-transform:uppercase;padding:10px 20px 4px;letter-spacing:1px;}
+    .sidebar .rol-chip{font-size:.65rem;padding:2px 8px;border-radius:20px;color:#fff;}
+    .content-wrap{margin-left:240px;min-height:100vh;background:#0f0f1a;}
+    .topbar{background:#1a1a2e;border-bottom:1px solid #2a2a4a;padding:.8rem 1.5rem;display:flex;justify-content:space-between;align-items:center;}
+    .topbar .page-title{font-weight:700;color:#fff;margin:0;font-size:1rem;}
+    .topbar .avatar{width:34px;height:34px;background:#e94560;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:.8rem;}
+    .main-pad{padding:1.5rem;}
+    .card-stat{background:#1a1a2e;border:1px solid #2a2a4a;border-radius:14px;transition:transform .2s;}
+    .card-stat:hover{transform:translateY(-2px);}
+    .table{color:#c0c0d0;}
+    .table thead th{border-color:#2a2a4a;color:#7070a0;font-size:.78rem;text-transform:uppercase;}
+    .table td{border-color:#1e1e30;}
+    .table-hover tbody tr:hover{background:#1e1e30;color:#fff;}
+    .btn-danger{background:#e94560;border-color:#e94560;}
+    .form-control,.form-select{background:#16213e;border:1px solid #2a2a4a;color:#e0e0e0;}
+    /* DataTables Butonlarını Temaya Uygun Hale Getirme */
+    .dt-buttons { margin-bottom: 1rem; }
+    .dt-button { margin-right: 5px !important; }
+    
+    @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+    .main-pad>*{animation:fadeIn .25s ease;}
+    ::-webkit-scrollbar{width:5px;}
+    ::-webkit-scrollbar-track{background:#1a1a2e;}
+    ::-webkit-scrollbar-thumb{background:#e94560;border-radius:3px;}
+  </style>
+</head>
+<body>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% for cat, msg in messages %}
+    <div class="alert alert-{{ cat }} alert-dismissible fade show position-fixed top-0 end-0 m-3" style="z-index:9999;min-width:280px;">
+      {{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  {% endfor %}
+{% endwith %}
+
+{% if kullanici is defined and kullanici %}
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="brand">
+      <h5><i class="bi bi-activity text-danger"></i> DepremDB</h5>
+      <div class="mt-1">
+        <span class="rol-chip
+          {% if kullanici.rol == 'kullanici' %}bg-secondary
+          {% elif kullanici.rol == 'arastirmaci' %}bg-primary
+          {% elif kullanici.rol == 'afet_yoneticisi' %}bg-danger
+          {% else %}bg-success{% endif %}">
+          {{ kullanici.etiket }}
+        </span>
+      </div>
+    </div>
+
+    <nav class="nav flex-column py-2 flex-grow-1">
+      <div class="nav-section">Genel</div>
+      <a class="nav-link" href="/dashboard"><i class="bi bi-speedometer2"></i> Dashboard</a>
+      <a class="nav-link" href="/depremler"><i class="bi bi-geo-alt"></i> Depremler</a>
+      <a class="nav-link" href="/faylar"><i class="bi bi-slash-circle"></i> Fay Hatlari</a>
+      <a class="nav-link" href="/harita"><i class="bi bi-map"></i> Harita</a>
+      <a class="nav-link" href="/rehber"><i class="bi bi-book"></i> Kişisel Rehberim</a>
+      
+      {% if kullanici.rol in ['arastirmaci', 'afet_yoneticisi', 'sistem_yoneticisi'] %}
+      <div class="nav-section">Hasar</div>
+      <a class="nav-link" href="/hasar"><i class="bi bi-clipboard-data"></i> Hasar ve Risk</a>
+      {% endif %}
+
+      {% if kullanici and kullanici.rol in ['arastirmaci', 'afet_yoneticisi', 'sistem_yoneticisi'] %}
+    <li class="nav-item mb-2">
+      <a href="/kriz-masasi" class="nav-link text-white text-decoration-none d-flex align-items-center" style="border-radius: 8px; transition: background 0.3s;" onmouseover="this.style.background='#2a2a4a'" onmouseout="this.style.background='transparent'">
+      <i class="bi bi-shield-exclamation text-danger fs-5 me-3"></i>
+      <span>Kriz Masası</span>
+      </a>
+    </li>
+     {% endif %}
+
+      {% if kullanici.rol == 'sistem_yoneticisi' %}
+      <div class="nav-section">Sistem</div>
+      <a class="nav-link" href="/yonetim"><i class="bi bi-gear"></i> Kullanıcı Yönetimi</a>
+      {% endif %}
+
+      <div class="mt-auto pb-3">
+        <hr style="border-color:#2a2a4a;margin:8px 16px;">
+        <a class="nav-link text-danger" href="/logout"><i class="bi bi-box-arrow-left"></i> Çıkış Yap</a>
+      </div>
+    </nav>
+  </div>
+
+  <div class="content-wrap">
+    <div class="topbar">
+      <span class="page-title">{% block page_title %}{% endblock %}</span>
+      <div class="d-flex align-items-center gap-2">
+        <small class="text-muted">{{ kullanici.gmail }}</small>
+        <div class="avatar">{{ kullanici.ad[0] | upper }}</div>
+      </div>
+    </div>
+    <div class="main-pad">
+      {% block content %}{% endblock %}
+    </div>
+  </div>
+{% else %}
+  {% block login_content %}{% endblock %}
+{% endif %}
+
+<!-- 2. JAVASCRIPT DOSYALARI (SIRA KRİTİKTİR) -->
+<!-- Önce jQuery yüklenmeli -->
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+
+<!-- Sonra Bootstrap -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Sonra Temel DataTables -->
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+
+<!-- En son eklentiler (Buttons, Excel, PDF) -->
+<script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.bootstrap5.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
+
+<!-- 3. TABLO BAŞLATMA KODU -->
+<script>
+    $(document).ready(function() {
+        // 'table' sınıfına sahip tüm tabloları akıllandır
+        if ($('.table').length > 0) {
+            $('.table').DataTable({
+                "order": [],
+                "stateSave": false,
+                "paging": true,
+                "lengthChange": false,
+                "searching": true,
+                "ordering": true,
+                "info": false,
+                "pageLength": 15,
+                "dom": 'Bfrtip',
+                "buttons": [
+                    {
+                        extend: 'excelHtml5',
+                        text: '<i class="bi bi-file-earmark-excel"></i> Excel',
+                        className: 'btn btn-success btn-sm'
+                    },
+                    {
+                        extend: 'pdfHtml5',
+                        text: '<i class="bi bi-file-earmark-pdf"></i> PDF',
+                        className: 'btn btn-danger btn-sm'
+                    }
+                ],
+                "language": {
+                    "url": "//cdn.datatables.net/plug-ins/1.13.6/i18n/tr.json"
+                }
+            });
+        }
+    });
+</script>
+
+<script>
+// Haversine Formülü: İki koordinat arasındaki km cinsinden mesafeyi hesaplar
+function mesafeHesapla(lat1, lon1, lat2, lon2) {
+    const R = 6371; // Dünyanın yarıçapı (km)
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = 
+        Math.sin(dLat/2) * Math.sin(dLat/2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+        Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+    return R * c;
+}
+
+function guvenlikAnaliziYap(kullaniciEnlem, kullaniciBoylam) {
+    // Senin harita API'ne istek atıyoruz (min 3.5 büyüklüğündekileri getir)
+    fetch('/api/harita-verisi?min_mw=3.5')
+        .then(response => response.json())
+        .then(depremler => {
+            if (depremler.length === 0) return;
+
+            let enYakinDeprem = null;
+            let minMesafe = Infinity;
+
+            // Tüm depremleri dön ve en yakın olanı bul
+            depremler.forEach(d => {
+                if (d.Enlem && d.Boylam) {
+                    const mesafe = mesafeHesapla(kullaniciEnlem, kullaniciBoylam, parseFloat(d.Enlem), parseFloat(d.Boylam));
+                    if (mesafe < minMesafe) {
+                        minMesafe = mesafe;
+                        enYakinDeprem = d;
+                    }
+                }
+            });
+
+            // Arayüzü Güncelleme (UI)
+            const kart = document.getElementById('guvenlik_karti');
+            const durumText = document.getElementById('guvenlik_durumu');
+            
+            document.getElementById('en_yakin_deprem_mesafe').innerText = `En yakın deprem size ${minMesafe.toFixed(1)} km uzaklıkta.`;
+            document.getElementById('en_yakin_detay').innerHTML = `
+                <b>Tarih:</b> ${enYakinDeprem.TarihSaat} | <b>Büyüklük:</b> ${enYakinDeprem.BuyuklukMw} Mw <br>
+                <b>Şehir:</b> ${enYakinDeprem.Sehir || 'Bilinmiyor'}
+            `;
+
+            // RİSK ALGORİTMASI (Mesafe ve Büyüklüğe Göre)
+            const mw = parseFloat(enYakinDeprem.BuyuklukMw);
+            
+            if (minMesafe < 50 && mw >= 5.5) {
+                // Çok tehlikeli: 50km'den yakın ve 5.5'ten büyük
+                durumText.innerText = "YÜKSEK RİSK";
+                durumText.className = "mb-0 text-danger";
+                kart.className = "card-stat p-4 mb-4 border-start border-5 border-danger";
+            } else if (minMesafe < 100 && mw >= 4.5) {
+                // Orta tehlikeli: 100km'den yakın ve 4.5'ten büyük
+                durumText.innerText = "DİKKAT";
+                durumText.className = "mb-0 text-warning";
+                kart.className = "card-stat p-4 mb-4 border-start border-5 border-warning";
+            } else {
+                // Güvenli
+                durumText.innerText = "GÜVENLİ";
+                durumText.className = "mb-0 text-success";
+                kart.className = "card-stat p-4 mb-4 border-start border-5 border-success";
+            }
+        });
+}
+
+// 1. Kullanıcının Konumunu Al
+if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+        function(position) {
+            document.getElementById('konum_bilgisi').innerText = "Konumunuz başarıyla alındı.";
+            guvenlikAnaliziYap(position.coords.latitude, position.coords.longitude);
+        },
+        function(error) {
+            // Eğer kullanıcı konum izni vermezse, varsayılan olarak Muş merkez koordinatlarını kullan
+            document.getElementById('konum_bilgisi').innerText = "Konum izni reddedildi. Varsayılan merkez (Muş) kullanılıyor.";
+            guvenlikAnaliziYap(38.7312, 41.4909); 
+        }
+    );
+} else {
+    document.getElementById('konum_bilgisi').innerText = "Tarayıcınız konum servisini desteklemiyor.";
+}
+</script>
+
+</body>
+</html>

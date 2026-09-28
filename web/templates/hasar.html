@@ -1,0 +1,299 @@
+{% extends "base.html" %}
+{% block title %}Hasar Kayitlari — DepremDB{% endblock %}
+{% block page_title %}Hasar Kayitlari ve Risk Analizi{% endblock %}
+{% block content %}
+
+<div class="row g-3 mb-4">
+  <div class="col-md-3">
+    <div class="card-stat p-3 text-center">
+      <i class="bi bi-heartbreak" style="font-size:1.8rem;color:#dc3545;"></i>
+      <div class="fs-2 fw-bold text-white mt-1">{{ toplam.OlumSayisi or 0 }}</div>
+      <div style="color:#9090b0;font-size:.8rem;">Toplam Can Kaybi</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card-stat p-3 text-center">
+      <i class="bi bi-bandaid" style="font-size:1.8rem;color:#ffc107;"></i>
+      <div class="fs-2 fw-bold text-white mt-1">{{ toplam.YaraliSayisi or 0 }}</div>
+      <div style="color:#9090b0;font-size:.8rem;">Toplam Yarali</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card-stat p-3 text-center">
+      <i class="bi bi-buildings" style="font-size:1.8rem;color:#6c757d;"></i>
+      <div class="fs-2 fw-bold text-white mt-1">{{ toplam.YikilanBina or 0 }}</div>
+      <div style="color:#9090b0;font-size:.8rem;">Yikilan Bina</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card-stat p-3 text-center">
+      <i class="bi bi-clipboard-data" style="font-size:1.8rem;color:#0dcaf0;"></i>
+      <div class="fs-2 fw-bold text-white mt-1">{{ hasar|length }}</div>
+      <div style="color:#9090b0;font-size:.8rem;">Hasar Kaydi Sayisi</div>
+    </div>
+  </div>
+</div>
+
+<div class="card-stat mb-4 p-3">
+  <form class="row g-2 align-items-end" method="get">
+    <div class="col-auto">
+      <label style="color:#9090b0;font-size:.8rem;">İL</label>
+      <input type="text" name="il_filtre" class="form-control form-control-sm bg-dark text-white border-secondary"
+             placeholder="İl ara..." value="{{ il_filtre or '' }}" style="width:130px;">
+    </div>
+    <div class="col-auto">
+      <label style="color:#9090b0;font-size:.8rem;">MİN MW</label>
+      <input type="number" step="0.1" name="min_mw" class="form-control form-control-sm bg-dark text-white border-secondary"
+             value="{{ min_mw or '' }}" style="width:80px;" placeholder="5.0">
+    </div>
+    <div class="col-auto">
+      <label style="color:#9090b0;font-size:.8rem;">MİN ÖLÜ</label>
+      <input type="number" name="min_olu" class="form-control form-control-sm bg-dark text-white border-secondary"
+             value="{{ min_olu or '' }}" style="width:80px;" placeholder="0">
+    </div>
+    <div class="col-auto align-self-end">
+      <button type="submit" class="btn btn-danger btn-sm">Filtrele</button>
+    </div>
+    <div class="col-auto align-self-end">
+      <a href="/hasar" class="btn btn-outline-secondary btn-sm">Temizle</a>
+    </div>
+  </form>
+</div>
+
+<div class="card-stat mb-5">
+  <div class="card-header d-flex align-items-center justify-content-between pb-2 border-bottom border-secondary mb-2">
+    <span class="fs-5"><i class="bi bi-clipboard-data text-danger"></i> Geçmiş Hasar Kayıtları</span>
+    <span class="badge bg-secondary">{{ hasar_filtered|length }} Kayıt</span>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-dark table-hover table-sm mb-0 align-middle">
+      <thead style="color: #9090b0;">
+        <tr>
+          <th>Tarih</th>
+          <th>İl</th>
+          <th>İlçe</th>
+          <th>Mw</th>
+          <th>Can Kaybı</th>
+          <th>Yaralı</th>
+          <th>Yıkılan Bina</th>
+          <th>Toplam Kayıp</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for h in hasar_filtered %}
+        <tr style="border-bottom: 1px solid #2a2a4a;">
+          <td style="font-size:.82rem; color:#b0b0d0;">{{ h.DepremTarihi }}</td>
+          <td style="color:#e94560;font-weight:500;">{{ h.Il }}</td>
+          <td style="font-size:.82rem;">{{ h.Ilce }}</td>
+          <td>
+            <span class="badge
+              {% if h.BuyuklukMw >= 7 %}bg-danger
+              {% elif h.BuyuklukMw >= 6 %}bg-warning text-dark
+              {% elif h.BuyuklukMw >= 5 %}bg-primary
+              {% else %}bg-secondary{% endif %}">
+              {{ h.BuyuklukMw }}
+            </span>
+          </td>
+          <td class="text-danger fw-bold">{{ h.OlumSayisi }}</td>
+          <td class="text-warning">{{ h.YaraliSayisi }}</td>
+          <td style="color:#9090b0;">{{ h.YikilanBina }}</td>
+          <td class="text-info fw-bold">{{ h.ToplamKayip }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="8" class="text-center py-4" style="color:#555;">Kayıt bulunamadı.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% set ns = namespace(kritik=0, orta=0, guvenli=0, max_skor=0, max_yer='-', toplam=zemin|length) %}
+{% for r in zemin %}
+    {% set val = r.RiskSkoru|string|replace(',', '.')|float %}
+    
+    {% if val >= 75 %} {% set ns.kritik = ns.kritik + 1 %}
+    {% elif val >= 50 %} {% set ns.orta = ns.orta + 1 %}
+    {% else %} {% set ns.guvenli = ns.guvenli + 1 %}
+    {% endif %}
+    
+    {% if val > ns.max_skor %}
+        {% set ns.max_skor = val %}
+        {% set ns.max_yer = r.Il ~ ' / ' ~ r.Ilce %}
+    {% endif %}
+{% endfor %}
+
+{% if ns.toplam > 0 %}
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card-stat p-3 h-100" style="border-left: 4px solid #dc3545;">
+            <h6 class="text-danger text-uppercase" style="font-size: 0.8rem;"><i class="bi bi-geo-alt-fill"></i> En Yüksek Riskli Bölge</h6>
+            <h4 class="text-white mb-1 mt-2">{{ ns.max_yer }}</h4>
+            <small class="text-muted">Max Risk Skoru: <strong class="text-white">{{ ns.max_skor }}</strong></small>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card-stat p-3 h-100" style="border-left: 4px solid #ffc107;">
+            <h6 class="text-warning text-uppercase" style="font-size: 0.8rem;"><i class="bi bi-exclamation-triangle-fill"></i> Kritik Bölgeler</h6>
+            <h4 class="text-white mb-1 mt-2">{{ ns.kritik }} Bölge</h4>
+            <small class="text-muted">Acil eylem planı gerektiren alanlar</small>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card-stat p-3 h-100" style="border-left: 4px solid #0dcaf0;">
+            <h6 class="text-info text-uppercase" style="font-size: 0.8rem;"><i class="bi bi-bar-chart-fill"></i> Risk Dağılımı</h6>
+            <div class="progress mt-3 mb-2" style="height: 10px; background-color: #2a2a4a; border-radius: 5px;">
+                <div class="progress-bar bg-danger" style="width: {{ (ns.kritik / ns.toplam) * 100 }}%;" title="Kritik Risk"></div>
+                <div class="progress-bar bg-warning" style="width: {{ (ns.orta / ns.toplam) * 100 }}%;" title="Orta Risk"></div>
+                <div class="progress-bar bg-success" style="width: {{ (ns.guvenli / ns.toplam) * 100 }}%;" title="Güvenli"></div>
+            </div>
+            <div class="d-flex justify-content-between" style="font-size: 0.75rem;">
+                <span class="text-danger">{{ ns.kritik }} Kritik</span>
+                <span class="text-warning">{{ ns.orta }} Orta</span>
+                <span class="text-success">{{ ns.guvenli }} Güvenli</span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="card bg-dark text-white shadow-lg border-0 mt-5" style="border-radius: 15px;">
+    <div class="card-header border-secondary d-flex justify-content-between align-items-center" style="background-color: #16213e; padding: 1.5rem;">
+        <div>
+            <h5 class="mb-0 text-white"><i class="bi bi-cpu text-info me-2"></i>Sismik Tehlike ve Zemin Karakteristiği Analizi</h5>
+            <small class="text-muted"> USGS standartlarına göre PGA (Tasarım İvmesi) ve Vs30 (Kayma Dalgası Hızı) parametreleri üzerinden çapraz risk modellemesi.</small>
+        </div>
+    </div>
+    
+    {% set analitik = namespace(sivilasma_riski=0, yuksek_ivme=0, kritik_bolge=0) %}
+    
+    {% for r in zemin %}
+        {% set pga_val = r.PGA|string|replace(',', '.')|float(default=0) %}
+        {% set vs30_val = r.Vs30|string|replace(',', '.')|float(default=999) %}
+        
+        {% set ham_skor = r.RiskSkoru|string|trim|replace(',', '.')|replace('%', '')|float(default=0) %}
+        {% set skor_val = ham_skor * 100 if (ham_skor > 0 and ham_skor <= 1) else ham_skor %}
+        
+        {% if vs30_val <= 360 %} {% set analitik.sivilasma_riski = analitik.sivilasma_riski + 1 %} {% endif %}
+        {% if pga_val >= 0.4 %} {% set analitik.yuksek_ivme = analitik.yuksek_ivme + 1 %} {% endif %}
+        {% if skor_val >= 75 %} {% set analitik.kritik_bolge = analitik.kritik_bolge + 1 %} {% endif %}
+    {% endfor %}
+
+    <div class="card-body p-4" style="background-color: #1a1a2e; border-bottom: 1px solid #2a2a4a;">
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="p-3 rounded" style="background-color: #6b6969; border-left: 4px solid #0dcaf0;">
+                    <h6 class="text-info mb-1" style="font-size: 0.8rem;">Zemin Büyütme / Sıvılaşma Tehlikesi</h6>
+                    <h3 class="text-white mb-0">{{ analitik.sivilasma_riski }} <small class="text-muted fs-6">Bölge</small></h3>
+                    <small class="text-muted" style="font-size: 0.75rem;">Vs30 &lt; 360 m/s olan, depremi büyütecek zayıf zeminler.</small>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="p-3 rounded" style="background-color: #6b6969; border-left: 4px solid #ffc107;">
+                    <h6 class="text-warning mb-1" style="font-size: 0.8rem;">Yüksek Sismik İvme (PGA > 0.4g)</h6>
+                    <h3 class="text-white mb-0">{{ analitik.yuksek_ivme }} <small class="text-muted fs-6">Bölge</small></h3>
+                    <small class="text-muted" style="font-size: 0.75rem;">Beklenen yer ivmesinin yapıları zorlayacağı bölgeler.</small>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="p-3 rounded" style="background-color: #6b6969; border-left: 4px solid #dc3545;">
+                    <h6 class="text-danger mb-1" style="font-size: 0.8rem;">Acil Müdahale Gerekenler</h6>
+                    <h3 class="text-white mb-0">{{ analitik.kritik_bolge }} <small class="text-muted fs-6">Bölge</small></h3>
+                    <small class="text-muted" style="font-size: 0.75rem;">Risk skoru %75 üzerinde olan kritik alarm alanları.</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-dark table-hover mb-0" style="vertical-align: middle;">
+                <thead style="background-color: #111827; color: #9090b0; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px;">
+                    <tr>
+                        <th class="ps-4">Lokasyon</th>
+                        <th>Zemin Karakteristiği (Vs30)</th>
+                        <th>Sismik İvme (PGA)</th>
+                        <th>Sistem Risk Skoru</th>
+                        <th>Uzman Değerlendirmesi</th>
+                    </tr>
+                </thead>
+                <tbody style="font-size: 0.9rem;">
+                    {% for r in zemin %}
+                    
+                    {% set raw_vs30 = r.Vs30|string|replace(',', '.')|float(default=999) %}
+                    {% set raw_pga = r.PGA|string|replace(',', '.')|float(default=0) %}
+                    
+                    {% set ham_skor = r.RiskSkoru|string|trim|replace(',', '.')|replace('%', '')|float(default=0) %}
+                    {% set son_skor = ham_skor * 100 if (ham_skor > 0 and ham_skor <= 1) else ham_skor %}
+                    {% set skor = son_skor | round(1) %}
+
+                    <tr style="border-bottom: 1px solid #2a2a4a;">
+                        <td class="ps-4">
+                            <div class="fw-bold text-white fs-6">{{ r.Il }}</div>
+                            <div class="text-muted"><i class="bi bi-geo-alt"></i> {{ r.Ilce }}</div>
+                        </td>
+                        
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <span class="badge bg-secondary me-2">{{ r.ZeminSinifi }}</span>
+                                <span class="text-light fw-bold">{{ r.Vs30 }} <small class="text-muted fw-normal">m/s</small></span>
+                            </div>
+                            <div class="mt-1" style="font-size: 0.75rem;">
+                                {% if raw_vs30 <= 180 %} <span class="text-danger"><i class="bi bi-exclamation-triangle"></i> Sıvılaşma Riski! (Çok Zayıf)</span>
+                                {% elif raw_vs30 <= 360 %} <span class="text-warning"><i class="bi bi-exclamation-circle"></i> Zemin Büyütmesi (Zayıf)</span>
+                                {% elif raw_vs30 <= 760 %} <span class="text-info">Standart Zemin (Orta Sert)</span>
+                                {% else %} <span class="text-success"><i class="bi bi-check-circle"></i> Kaya Zemin (Sağlam)</span>
+                                {% endif %}
+                            </div>
+                        </td>
+                        
+                        <td>
+                            <div class="text-light fw-bold">{{ r.PGA }} <small class="text-muted fw-normal">g</small></div>
+                            <div class="progress mt-1" style="height: 4px; width: 80px; background-color: #2a2a4a;">
+                                <div class="progress-bar {% if raw_pga >= 0.4 %}bg-danger{% elif raw_pga >= 0.2 %}bg-warning{% else %}bg-info{% endif %}" 
+                                     style="width: {{ (raw_pga / 0.8) * 100 }}%;"></div>
+                            </div>
+                        </td>
+                        
+                        <td style="width: 220px;">
+                            <div class="d-flex justify-content-between mb-1">
+                                <small class="text-muted">Hesaplanan Risk:</small>
+                                <small class="fw-bold text-white">%{{ skor }}</small>
+                            </div>
+                            <div class="progress" style="height: 10px; background-color: #2a2a4a; border-radius: 5px;">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated 
+                                    {% if skor >= 75 %} bg-danger 
+                                    {% elif skor >= 50 %} bg-warning 
+                                    {% else %} bg-success {% endif %}" 
+                                    style="width: {{ skor }}%;">
+                                </div>
+                            </div>
+                        </td>
+                        
+                        <td>
+                            {% if skor >= 75 %}
+                                <span class="badge bg-danger p-2 mb-1"><i class="bi bi-shield-x"></i> KRİTİK RİSK</span>
+                                <div class="text-muted" style="font-size: 0.75rem;">Öncelikli kentsel dönüşüm / tahliye incelenmeli.</div>
+                            {% elif skor >= 50 %}
+                                <span class="badge bg-warning text-dark p-2 mb-1"><i class="bi bi-shield-exclamation"></i> ORTA RİSK</span>
+                                <div class="text-muted" style="font-size: 0.75rem;">Yapı stoku detaylı sismik teste tabi tutulmalı.</div>
+                            {% else %}
+                                <span class="badge bg-success p-2 mb-1"><i class="bi bi-shield-check"></i> GÜVENLİ</span>
+                                <div class="text-muted" style="font-size: 0.75rem;">Standart yapı yönetmelikleri yeterli görünmektedir.</div>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center p-5 text-muted">
+                            <i class="bi bi-radar fs-1 d-block mb-3 text-secondary"></i>
+                            USGS zemin veri bağlantısı bekleniyor. Zemin verisi bulunamadı.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

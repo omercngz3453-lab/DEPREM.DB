@@ -1,0 +1,314 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — DepremDB{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block content %}
+<div class="mb-3">
+  <h5 class="text-white fw-bold mb-0">Hos geldiniz, {{ kullanici.ad }}</h5>
+  <small style="color:#9090b0;">{{ kullanici.etiket }} olarak giris yaptiniz</small>
+</div>
+
+<!-- GÜVENLİK ANALİZİ KARTI -->
+<div class="card-stat p-4 mb-4 border-start border-5 border-success" id="guvenlik_karti">
+  <div class="d-flex justify-content-between align-items-center">
+    <div>
+      <h5 class="text-white mb-1"><i class="bi bi-shield-check"></i> Güvenlik Durumu</h5>
+      <p class="text-muted mb-0" style="font-size: 0.9rem;" id="konum_bilgisi">Konumunuz aranıyor...</p>
+    </div>
+    <div class="text-end">
+      <h3 class="mb-0 text-success" id="guvenlik_durumu">Hesaplanıyor...</h3>
+      <small class="text-muted" id="en_yakin_deprem_mesafe">-</small>
+    </div>
+  </div>
+  <hr style="border-color:#2a2a4a;">
+  <div id="en_yakin_detay" style="font-size: 0.85rem; color: #c0c0d0;">
+    Bölgenizdeki son sismik aktiviteler taranıyor...
+  </div>
+</div>
+
+<!-- İSTATİSTİK KARTLARI -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="card-stat p-3 text-center">
+      <i class="bi bi-activity" style="font-size:1.8rem;color:#e94560;"></i>
+      <div class="fs-2 fw-bold text-white mt-1">{{ stats.get('toplam_deprem','?') }}</div>
+      <div style="color:#9090b0;font-size:.8rem;">Toplam Deprem</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card-stat p-3 text-center">
+      <i class="bi bi-exclamation-circle" style="font-size:1.8rem;color:#ffc107;"></i>
+      <div class="fs-2 fw-bold text-white mt-1">{{ stats.get('buyuk_deprem','?') }}</div>
+      <div style="color:#9090b0;font-size:.8rem;">Mw 5.0 Ustu</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card-stat p-3 text-center">
+      <i class="bi bi-clock-history" style="font-size:1.8rem;color:#0dcaf0;"></i>
+      <div class="fs-2 fw-bold text-white mt-1">{{ stats.get('son24','?') }}</div>
+      <div style="color:#9090b0;font-size:.8rem;">Son 24 Saat</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card-stat p-3 text-center">
+      <i class="bi bi-graph-up" style="font-size:1.8rem;color:#0d6efd;"></i>
+      <div class="fs-2 fw-bold text-white mt-1">{{ stats.get('max_buyukluk','?') }}</div>
+      <div style="color:#9090b0;font-size:.8rem;">En Buyuk Mw</div>
+    </div>
+  </div>
+</div>
+
+
+
+<!-- HASAR ÖZETİ — ROL BAZLI -->
+<div class="row g-3 mb-4">
+  <!-- KULLANICI: sadece ölüm sayısı -->
+  <div class="col-md-4">
+    <div class="card-stat p-3 text-center">
+      <i class="bi bi-heartbreak" style="font-size:1.8rem;color:#dc3545;"></i>
+      <div class="fs-2 fw-bold text-white mt-1">{{ stats.get('toplam_olum','?') }}</div>
+      <div style="color:#9090b0;font-size:.8rem;">Toplam Can Kaybi</div>
+    </div>
+  </div>
+
+  {% if kullanici.rol in ['arastirmaci','afet_yoneticisi','sistem_yoneticisi'] %}
+  <!-- ARASTIRMACI+: yaralı sayısı -->
+  <div class="col-md-4">
+    <div class="card-stat p-3 text-center">
+      <i class="bi bi-bandaid" style="font-size:1.8rem;color:#ffc107;"></i>
+      <div class="fs-2 fw-bold text-white mt-1">{{ stats.get('toplam_yarali','?') }}</div>
+      <div style="color:#9090b0;font-size:.8rem;">Toplam Yarali</div>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if kullanici.rol in ['afet_yoneticisi','sistem_yoneticisi'] %}
+  <!-- AFET YÖNETİCİSİ+: yıkılan bina -->
+  <div class="col-md-4">
+    <div class="card-stat p-3 text-center">
+      <i class="bi bi-buildings" style="font-size:1.8rem;color:#6c757d;"></i>
+      <div class="fs-2 fw-bold text-white mt-1">{{ stats.get('toplam_bina','?') }}</div>
+      <div style="color:#9090b0;font-size:.8rem;">Yikilan Bina</div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<div class="row g-3 mb-4">
+  <!-- EN BÜYÜK 10 DEPREM -->
+  <div class="col-md-6">
+    <div class="card-stat h-100">
+      <div class="card-header d-flex align-items-center gap-2">
+        <i class="bi bi-trophy text-warning"></i> En Buyuk 10 Deprem
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover table-sm mb-0">
+          <thead class="table-dark">
+            <tr>
+              <th>Tarih</th><th>Sehir</th><th>Mw</th><th>Derinlik</th>
+              <!-- Rol bazlı hasar sütunları -->
+              <th>Olu</th>
+              {% if kullanici.rol in ['arastirmaci','afet_yoneticisi','sistem_yoneticisi'] %}
+              <th>Yarali</th>
+              {% endif %}
+              {% if kullanici.rol in ['afet_yoneticisi','sistem_yoneticisi'] %}
+              <th>Bina</th>
+              {% endif %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for d in en_buyuk %}
+            <tr>
+              <td style="font-size:.82rem;">{{ d.Tarih }}</td>
+              <td style="color:#e94560;">{{ d.Sehir or '-' }}</td>
+              <td>
+                <span class="badge
+                  {% if d.BuyuklukMw >= 7 %}bg-danger
+                  {% elif d.BuyuklukMw >= 6 %}bg-warning text-dark
+                  {% else %}bg-primary{% endif %}">
+                  {{ d.BuyuklukMw }}
+                </span>
+              </td>
+              <td style="font-size:.82rem;">{{ d.Derinlik }} km</td>
+              <td class="text-danger fw-bold">{{ d.OlumSayisi or 0 }}</td>
+              {% if kullanici.rol in ['arastirmaci','afet_yoneticisi','sistem_yoneticisi'] %}
+              <td class="text-warning">{{ d.YaraliSayisi or 0 }}</td>
+              {% endif %}
+              {% if kullanici.rol in ['afet_yoneticisi','sistem_yoneticisi'] %}
+              <td style="color:#9090b0;">{{ d.YikilanBina or 0 }}</td>
+              {% endif %}
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- SON DEPREMLER CANLI FEED -->
+<div class="col-md-6">
+  <div class="card-stat h-100">
+    <div class="card-header d-flex align-items-center justify-content-between">
+      <span><i class="bi bi-clock text-info"></i> Son Depremler</span>
+      <div class="d-flex align-items-center gap-2">
+        <span class="badge bg-danger" id="son24badge">{{ stats.get('son24',0) }} (24s)</span>
+        <span id="canliDot" style="width:8px;height:8px;background:#28a745;border-radius:50%;display:inline-block;animation:pulse 1.5s infinite;"></span>
+        <small style="color:#9090b0;font-size:.75rem;" id="sonGuncelleme">Canli</small>
+      </div>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-hover table-sm mb-0">
+        <thead class="table-dark">
+          <tr><th>Tarih/Saat</th><th>Sehir</th><th>Mw</th><th>Derinlik</th></tr>
+        </thead>
+        <tbody id="canliDepremBody">
+          {% for d in son_depremler %}
+          <tr>
+            <td style="font-size:.82rem;">{{ d.TarihSaat }}</td>
+            <td style="color:#e94560;">{{ d.Sehir or '-' }}</td>
+            <td>
+              <span class="badge
+                {% if d.BuyuklukMw >= 6 %}bg-danger
+                {% elif d.BuyuklukMw >= 5 %}bg-warning text-dark
+                {% else %}bg-secondary{% endif %}">
+                {{ d.BuyuklukMw }}
+              </span>
+            </td>
+            <td style="font-size:.82rem;">{{ d.Derinlik }} km</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="p-2 text-end">
+      <a href="/depremler" class="btn btn-sm btn-outline-secondary">Tumu</a>
+      <a href="/harita" class="btn btn-sm btn-danger ms-1">Harita</a>
+    </div>
+  </div>
+</div>
+
+<style>
+@keyframes pulse {
+  0%,100%{opacity:1;transform:scale(1)}
+  50%{opacity:.5;transform:scale(1.3)}
+}
+</style>
+
+<script>
+function canliGuncelle() {
+  fetch('/api/son-depremler')
+    .then(r => r.json())
+    .then(data => {
+      const tbody = document.getElementById('canliDepremBody');
+      if (!data.length) return;
+      tbody.innerHTML = data.map(d => {
+        let badgeClass = 'bg-secondary';
+        if (d.BuyuklukMw >= 6) badgeClass = 'bg-danger';
+        else if (d.BuyuklukMw >= 5) badgeClass = 'bg-warning text-dark';
+        return `<tr>
+          <td style="font-size:.82rem;">${d.TarihSaat}</td>
+          <td style="color:#e94560;">${d.Sehir || '-'}</td>
+          <td><span class="badge ${badgeClass}">${d.BuyuklukMw}</span></td>
+          <td style="font-size:.82rem;">${d.Derinlik} km</td>
+        </tr>`;
+      }).join('');
+      document.getElementById('sonGuncelleme').textContent =
+        new Date().toLocaleTimeString('tr-TR');
+    })
+    .catch(e => console.error(e));
+}
+
+// Her 30 saniyede güncelle
+canliGuncelle();
+setInterval(canliGuncelle, 30000);
+</script>
+
+<!-- HASAR KAYITLARI TABLOSU — ROL BAZLI -->
+<div class="card-stat mb-4">
+  <div class="card-header d-flex align-items-center gap-2">
+    <i class="bi bi-clipboard-data text-danger"></i> Hasar Kayitlari
+    {% if kullanici.rol == 'kullanici' %}
+    <span class="badge bg-secondary ms-auto">Sadece Can Kaybi</span>
+    {% elif kullanici.rol == 'arastirmaci' %}
+    <span class="badge bg-primary ms-auto">Can Kaybi + Yarali</span>
+    {% else %}
+    <span class="badge bg-danger ms-auto">Tam Detay</span>
+    {% endif %}
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover table-sm mb-0">
+      <thead class="table-dark">
+        <tr>
+          <th>Deprem Tarihi</th><th>Sehir</th><th>Il</th><th>Mw</th>
+          <th>Can Kaybi</th>
+          {% if kullanici.rol in ['arastirmaci','afet_yoneticisi','sistem_yoneticisi'] %}
+          <th>Yarali</th>
+          {% endif %}
+          {% if kullanici.rol in ['afet_yoneticisi','sistem_yoneticisi'] %}
+          <th>Yikilan Bina</th>
+          <th>Toplam Kayip</th>
+          {% endif %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for h in hasar_kayitlari %}
+        <tr>
+          <td style="font-size:.82rem;">{{ h.DepremTarihi }}</td>
+          <td style="color:#e94560;">{{ h.Sehir or '-' }}</td>
+          <td>{{ h.Il }}</td>
+          <td><span class="badge bg-danger">{{ h.BuyuklukMw }}</span></td>
+          <td class="text-danger fw-bold">{{ h.OlumSayisi }}</td>
+          {% if kullanici.rol in ['arastirmaci','afet_yoneticisi','sistem_yoneticisi'] %}
+          <td class="text-warning">{{ h.YaraliSayisi }}</td>
+          {% endif %}
+          {% if kullanici.rol in ['afet_yoneticisi','sistem_yoneticisi'] %}
+          <td style="color:#9090b0;">{{ h.YikilanBina }}</td>
+          <td class="text-info">{{ h.ToplamKayip }}</td>
+          {% endif %}
+        </tr>
+        {% else %}
+        <tr><td colspan="8" class="text-center py-3" style="color:#555;">Hasar kaydi bulunamadi.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- HIZLI ERİŞİM -->
+<div class="row g-3">
+  <div class="col-md-4">
+    <a href="/depremler" class="text-decoration-none">
+      <div class="card-stat p-3 d-flex align-items-center gap-3">
+        <i class="bi bi-list-ul" style="font-size:2rem;color:#e94560;"></i>
+        <div>
+          <div class="text-white fw-bold">Deprem Listesi</div>
+          <div style="color:#9090b0;font-size:.8rem;">Filtrele ve ara</div>
+        </div>
+      </div>
+    </a>
+  </div>
+  <div class="col-md-4">
+    <a href="/harita" class="text-decoration-none">
+      <div class="card-stat p-3 d-flex align-items-center gap-3">
+        <i class="bi bi-map" style="font-size:2rem;color:#0dcaf0;"></i>
+        <div>
+          <div class="text-white fw-bold">Deprem Haritasi</div>
+          <div style="color:#9090b0;font-size:.8rem;">Interaktif harita</div>
+        </div>
+      </div>
+    </a>
+  </div>
+  {% if kullanici.rol in ['arastirmaci','afet_yoneticisi','sistem_yoneticisi'] %}
+  <div class="col-md-4">
+    <a href="/istatistik" class="text-decoration-none">
+      <div class="card-stat p-3 d-flex align-items-center gap-3">
+        <i class="bi bi-bar-chart-line" style="font-size:2rem;color:#ffc107;"></i>
+        <div>
+          <div class="text-white fw-bold">Istatistikler</div>
+          <div style="color:#9090b0;font-size:.8rem;">Yillik ve aylik analizler</div>
+        </div>
+      </div>
+    </a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Kriz Masası — DepremDB{% endblock %}
+{% block page_title %}Canlı Saha Bildirimleri{% endblock %}
+
+{% block content %}
+<div class="card p-0 shadow-lg" style="background-color: #1a1a2e; border: 1px solid #2a2a4a; border-radius: 12px; overflow: hidden;">
+    <div class="card-header border-bottom-0" style="background-color: #16213e; padding: 1.5rem;">
+        <h5 class="mb-0 text-white"><i class="bi bi-activity text-danger"></i> Sahadan Gelen Son Bildirimler</h5>
+        <small class="text-muted">Kullanıcılar tarafından iletilen anlık sarsıntı ve bina durumu raporları</small>
+    </div>
+    
+    <div class="table-responsive">
+        <table class="table table-dark table-hover mb-0" style="background-color: #1a1a2e; vertical-align: middle;">
+            <thead style="background-color: #111827; color: #9090b0; font-size: 0.85rem; text-transform: uppercase;">
+                <tr>
+                    <th class="ps-4">ID</th>
+                    <th>Tarih / Saat</th>
+                    <th>Bildiren Kişi</th>
+                    <th>Sarsıntı Şiddeti</th>
+                    <th>Bina Durumu</th>
+                    <th>Ekstra Notlar</th>
+                    <th>Konum</th> </tr>
+                </tr>
+            </thead>
+            <tbody style="font-size: 0.95rem;">
+                {% for b in bildirimler %}
+                <tr style="border-bottom: 1px solid #2a2a4a;">
+                    <td class="ps-4 text-muted">#{{ b.BildirimID }}</td>
+                    <td class="text-light"><i class="bi bi-clock me-1 text-muted"></i> {{ b.TarihSaat }}</td>
+                    <td>
+                        <div class="fw-bold text-white">{{ b.AdSoyad }}</div>
+                        <small class="text-muted">{{ b.Gmail }}</small>
+                    </td>
+                    <td>
+                        {% if 'Şiddetli' in b.Siddet %}
+                            <span class="badge bg-danger p-2"><i class="bi bi-exclamation-triangle-fill"></i> Şiddetli</span>
+                        {% elif 'Orta' in b.Siddet %}
+                            <span class="badge bg-warning text-dark p-2">Orta</span>
+                        {% else %}
+                            <span class="badge bg-info text-dark p-2">Hafif</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-light">{{ b.BinaDurumu }}</td>
+                    <td style="max-width: 250px;">
+                        {% if b.EkstraNot %}
+                            <span class="d-inline-block text-truncate" style="max-width: 100%; color: #b0b0d0;" title="{{ b.EkstraNot }}">
+                                {{ b.EkstraNot }}
+                            </span>
+                        {% else %}
+                            <span class="text-muted">-</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if b.Enlem and b.Boylam %}
+                            <a href="https://www.google.com/maps?q={{ b.Enlem }},{{ b.Boylam }}" target="_blank" class="btn btn-sm btn-outline-info" title="Haritada Aç">
+                                <i class="bi bi-geo-alt-fill"></i> Harita
+                            </a>
+                        {% else %}
+                            <span class="badge bg-secondary">Konum Yok</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                
+                {% else %}
+                <tr>
+                    <td colspan="6" class="text-center p-5 text-muted">
+                        <i class="bi bi-inbox fs-1 d-block mb-3 text-secondary"></i>
+                        Henüz sahadan gelen bir afet bildirimi bulunmuyor. Tüm veriler güvende.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

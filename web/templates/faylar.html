@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}Fay Hatlari — DepremDB{% endblock %}
+{% block page_title %}Fay Hatlari{% endblock %}
+{% block content %}
+
+<div class="row g-3 mb-4">
+  <div class="col-md-3">
+    <div class="card-stat p-3 text-center">
+      <i class="bi bi-slash-circle" style="font-size:1.8rem;color:#e94560;"></i>
+      <div class="fs-2 fw-bold text-white mt-1">{{ fay_listesi|length }}</div>
+      <div style="color:#9090b0;font-size:.8rem;">Toplam Fay Hatti</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card-stat p-3 text-center">
+      <i class="bi bi-lightning" style="font-size:1.8rem;color:#ffc107;"></i>
+      <div class="fs-2 fw-bold text-white mt-1">
+        {{ fay_listesi|selectattr('AktifMi')|list|length }}
+      </div>
+      <div style="color:#9090b0;font-size:.8rem;">Aktif Fay</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card-stat p-3 text-center">
+      <i class="bi bi-arrows-expand" style="font-size:1.8rem;color:#0dcaf0;"></i>
+      <div class="fs-2 fw-bold text-white mt-1">
+        {% set ns = namespace(toplam=0) %}
+        {% for f in fay_listesi %}{% set ns.toplam = ns.toplam + (f.Uzunluk_km or 0) %}{% endfor %}
+        {{ ns.toplam }} km
+      </div>
+      <div style="color:#9090b0;font-size:.8rem;">Toplam Uzunluk</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card-stat p-3 text-center">
+      <i class="bi bi-activity" style="font-size:1.8rem;color:#198754;"></i>
+      <div class="fs-2 fw-bold text-white mt-1">
+        {% if fay_listesi %}{{ fay_listesi[0].ToplamDeprem }}{% else %}0{% endif %}
+      </div>
+      <div style="color:#9090b0;font-size:.8rem;">En Aktif Fay Depremi</div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3">
+  {% for f in fay_listesi %}
+  <div class="col-md-6">
+    <div class="card-stat p-4">
+      <div class="d-flex align-items-start justify-content-between mb-2">
+        <div>
+          <h6 class="text-white fw-bold mb-1">{{ f.FayAdi }}</h6>
+          <span class="badge bg-secondary me-1">{{ f.Tip or 'Bilinmiyor' }}</span>
+          {% if f.AktifMi %}
+          <span class="badge bg-danger">Aktif</span>
+          {% else %}
+          <span class="badge bg-secondary">Pasif</span>
+          {% endif %}
+        </div>
+        <div class="text-end">
+          <div style="font-size:1.4rem;font-weight:700;color:#e94560;">
+            {{ f.MaxBuyukluk or '-' }}
+          </div>
+          <div style="color:#9090b0;font-size:.72rem;">Max Mw</div>
+        </div>
+      </div>
+
+      <div class="row g-2 mt-1">
+        <div class="col-4 text-center" style="border-right:1px solid #2a2a4a;">
+          <div class="text-white fw-bold">{{ f.Uzunluk_km or '-' }} km</div>
+          <div style="color:#9090b0;font-size:.72rem;">Uzunluk</div>
+        </div>
+        <div class="col-4 text-center" style="border-right:1px solid #2a2a4a;">
+          <div class="text-white fw-bold">{{ f.ToplamDeprem or 0 }}</div>
+          <div style="color:#9090b0;font-size:.72rem;">Deprem Sayisi</div>
+        </div>
+        <div class="col-4 text-center">
+          <div class="text-white fw-bold">
+            {% if f.OrtBuyukluk %}{{ "%.1f"|format(f.OrtBuyukluk) }}{% else %}-{% endif %}
+          </div>
+          <div style="color:#9090b0;font-size:.72rem;">Ort. Buyukluk</div>
+        </div>
+      </div>
+
+      {% if f.ToplamDeprem %}
+      <div class="mt-3">
+        <div style="color:#9090b0;font-size:.72rem;" class="mb-1">Deprem Yogunlugu</div>
+        <div class="progress" style="height:8px;">
+          {% set max_deprem = fay_listesi[0].ToplamDeprem %}
+          <div class="progress-bar bg-danger"
+               style="width:{{ ((f.ToplamDeprem / max_deprem) * 100)|int }}%;"></div>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

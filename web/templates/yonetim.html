@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block title %}Yonetim — DepremDB{% endblock %}
+{% block page_title %}Sistem Yonetimi{% endblock %}
+{% block content %}
+<ul class="nav nav-tabs mb-4">
+  <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#kullanicilar">Kullanicilar</a></li>
+  <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#uyarilar">Deprem Uyarilari</a></li>
+  <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#loglar">Oturum Loglari</a></li>
+</ul>
+<div class="tab-content">
+
+  <!-- KULLANICILAR -->
+  <div class="tab-pane fade show active" id="kullanicilar">
+    <div class="card-stat">
+      <div class="table-responsive">
+        <table class="table table-hover table-sm mb-0">
+          <thead class="table-dark">
+            <tr><th>ID</th><th>Gmail</th><th>Ad Soyad</th><th>Rol</th><th>Durum</th><th>Son Giris</th><th>Rol Degistir</th></tr>
+          </thead>
+          <tbody>
+            {% for k in kullanicilar %}
+            <tr>
+              <td style="color:#555;">{{ k.KullaniciID }}</td>
+              <td style="font-size:.85rem;">{{ k.Gmail }}</td>
+              <td>{{ k.AdSoyad }}</td>
+              <td>
+                <span class="badge
+                  {% if k.Rol == 'kullanici' %}bg-secondary
+                  {% elif k.Rol == 'arastirmaci' %}bg-primary
+                  {% elif k.Rol == 'afet_yoneticisi' %}bg-danger
+                  {% else %}bg-success{% endif %}">
+                  {{ k.Rol }}
+                </span>
+              </td>
+              <td>
+                {% if k.AktifMi %}
+                  <span class="badge bg-success">Aktif</span>
+                {% else %}
+                  <span class="badge bg-secondary">Pasif</span>
+                {% endif %}
+              </td>
+              <td style="font-size:.82rem;color:#9090b0;">{{ k.SonGiris or '-' }}</td>
+              <td>
+                <form method="post" action="/yonetim/rol-guncelle" class="d-flex gap-1">
+                  <input type="hidden" name="gmail" value="{{ k.Gmail }}">
+                  <select name="rol" class="form-select form-select-sm" style="width:145px;">
+                    {% for r in rol_listesi %}
+                    <option value="{{ r }}" {% if r == k.Rol %}selected{% endif %}>{{ r }}</option>
+                    {% endfor %}
+                  </select>
+                  <button type="submit" class="btn btn-sm btn-outline-secondary">Kaydet</button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- UYARILAR -->
+  <div class="tab-pane fade" id="uyarilar">
+    <div class="card-stat">
+      <div class="table-responsive">
+        <table class="table table-hover table-sm mb-0">
+          <thead class="table-dark"><tr><th>Mw</th><th>Deprem Tarihi</th><th>Uyari Mesaji</th><th>Log Zamani</th></tr></thead>
+          <tbody>
+            {% for u in uyarilar %}
+            <tr>
+              <td><span class="badge bg-danger">{{ u.BuyuklukMw }}</span></td>
+              <td>{{ u.TarihSaat }}</td>
+              <td style="font-size:.82rem;">{{ u.UyariMesaji }}</td>
+              <td style="font-size:.82rem;color:#9090b0;">{{ u.LogZamani }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="4" class="text-center py-3" style="color:#555;">Uyari yok.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOGLAR -->
+  <div class="tab-pane fade" id="loglar">
+    <div class="card-stat">
+      <div class="table-responsive">
+        <table class="table table-hover table-sm mb-0">
+          <thead class="table-dark"><tr><th>Kullanici</th><th>Rol</th><th>Giris</th><th>Cikis</th><th>Sure (dk)</th><th>IP</th></tr></thead>
+          <tbody>
+            {% for l in loglar %}
+            <tr>
+              <td style="font-size:.85rem;">{{ l.Gmail }}</td>
+              <td><span class="badge bg-secondary">{{ l.Rol }}</span></td>
+              <td style="font-size:.82rem;">{{ l.GirisTarihi }}</td>
+              <td style="font-size:.82rem;color:#9090b0;">{{ l.CikisTarihi or '-' }}</td>
+              <td>{{ l.OturumDakika or '-' }}</td>
+              <td style="font-size:.8rem;color:#555;">{{ l.IPAdresi or '-' }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

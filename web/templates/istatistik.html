@@ -1,0 +1,247 @@
+{% extends "base.html" %}
+{% block title %}Istatistikler — DepremDB{% endblock %}
+{% block page_title %}Deprem Istatistikleri{% endblock %}
+{% block content %}
+
+<!-- ================= 3'LÜ GRAFİK SETİ (TABLOLARIN ÜSTÜNE EKLENECEK) ================= -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<div class="row mb-4">
+    <!-- 1. Yıllık Trend (Çizgi Grafik) -->
+    <div class="col-md-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-dark text-white"><i class="bi bi-graph-up"></i> Yıllık Trend</div>
+            <div class="card-body">
+                <canvas id="trendChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. Şehir Dağılımı (Pasta Grafik) -->
+    <div class="col-md-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-dark text-white"><i class="bi bi-pie-chart"></i> Riskli Şehirler</div>
+            <div class="card-body">
+                <canvas id="sehirChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. Fay Hatları (Sütun Grafik) -->
+    <div class="col-md-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-dark text-white"><i class="bi bi-bar-chart"></i> Aktif Fay Hatları</div>
+            <div class="card-body">
+                <canvas id="fayChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    // Verileri Python'dan alıyoruz
+    const yillikVeri = {{ yillik | tojson }}.reverse();
+    const sehirVeri = {{ sehir_dagilim | tojson }};
+    const fayVeri = {{ fay | tojson }}; 
+
+    // 1. ÇİZGİ GRAFİK (Yıllık)
+    new Chart(document.getElementById('trendChart'), {
+        type: 'line',
+        data: {
+            labels: yillikVeri.map(item => item.Yil),
+            datasets: [{
+                label: 'Toplam Deprem',
+                data: yillikVeri.map(item => item.ToplamDeprem),
+                borderColor: '#0dcaf0',
+                backgroundColor: 'rgba(13, 202, 240, 0.2)',
+                fill: true, tension: 0.3
+            }]
+        }
+    });
+
+    // 2. PASTA GRAFİK (Şehirler - İlk 5)
+    new Chart(document.getElementById('sehirChart'), {
+        type: 'doughnut',
+        data: {
+            labels: sehirVeri.slice(0, 5).map(item => item.Sehir),
+            datasets: [{
+                data: sehirVeri.slice(0, 5).map(item => item.Sayi),
+                backgroundColor: ['#ff6384', '#36a2eb', '#ffce56', '#4bc0c0', '#9966ff']
+            }]
+        }
+    });
+
+    // 3. SÜTUN GRAFİK (Fay Hatları - İlk 5)
+    // Not: Fay adı sütununun ismini veritabanındaki isme göre (FayAdi vb.) değiştirebilirsin
+    new Chart(document.getElementById('fayChart'), {
+        type: 'bar',
+        data: {
+            labels: fayVeri.slice(0, 5).map(item => item.FayAdi || item.FayHattiAdi || 'Bilinmeyen Fay'),
+            datasets: [{
+                label: 'Deprem Sayısı',
+                data: fayVeri.slice(0, 5).map(item => item.ToplamDepremSayisi),
+                backgroundColor: '#ffc107'
+            }]
+        }
+    });
+    
+});
+
+</script>
+
+<!-- ================= 4. GRAFİK: HASAR DURUMU (YENİ EKLENEN) ================= -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-danger text-white">
+                <i class="bi bi-building-x"></i> En Ağır Hasar Alan Şehirler (Can Kaybı ve Yıkılan Bina)
+            </div>
+            <div class="card-body">
+                <canvas id="hasarChart" height="80"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    // Python'dan yeni eklediğimiz hasar verisini alıyoruz
+    const hasarVeri = {{ hasar_veri | tojson | default('[]') }};
+
+    // 4. ÇİFT SÜTUNLU HASAR GRAFİĞİ
+    new Chart(document.getElementById('hasarChart'), {
+        type: 'bar',
+        data: {
+            // Şehir isimleri (X ekseni)
+            labels: hasarVeri.map(item => item.Il), 
+            datasets: [
+                {
+                    label: 'Can Kaybı',
+                    data: hasarVeri.map(item => item.ToplamOlu),
+                    backgroundColor: '#dc3545', // Kırmızı
+                    borderWidth: 1
+                },
+                {
+                    label: 'Yıkılan Bina',
+                    data: hasarVeri.map(item => item.ToplamBina),
+                    backgroundColor: '#fd7e14', // Turuncu
+                    borderWidth: 1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { position: 'top' }
+            },
+            scales: {
+                y: { beginAtZero: true } // Sayılar sıfırdan başlasın
+            }
+        }
+    });
+});
+</script>
+<!-- ================= HASAR GRAFİĞİ SONU ================= -->
+<!-- ================= GRAFİK SETİ SONU ================= -->
+
+<div class="row g-3 mb-4">
+  <!-- Yıllık -->
+  <div class="col-md-4">
+    <div class="card-stat h-100">
+      <div class="card-header">Yillik Deprem Sayilari</div>
+      <div style="max-height:350px;overflow-y:auto;">
+        <table class="table table-hover table-sm mb-0">
+          <thead class="table-dark"><tr><th>Yil</th><th>Toplam</th><th>Mw5+</th><th>Mw6+</th><th>Max</th></tr></thead>
+          <tbody>
+            {% for y in yillik %}
+            <tr>
+              <td>{{ y.Yil }}</td>
+              <td>{{ y.ToplamDeprem }}</td>
+              <td>{{ y.BuyukDeprem_5plus }}</td>
+              <td>{{ y.BuyukDeprem_6plus }}</td>
+              <td><span class="badge bg-danger">{{ y.EnBuyuk }}</span></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Şehir Dağılımı -->
+  <div class="col-md-4">
+    <div class="card-stat h-100">
+      <div class="card-header">Sehire Gore Deprem Dagilimi (Top 15)</div>
+      <div style="max-height:350px;overflow-y:auto;">
+        <table class="table table-hover table-sm mb-0">
+          <thead class="table-dark"><tr><th>Sehir</th><th>Sayi</th><th>Max Mw</th></tr></thead>
+          <tbody>
+            {% for s in sehir_dagilim %}
+            <tr>
+              <td style="color:#e94560;">{{ s.Sehir }}</td>
+              <td>{{ s.Sayi }}</td>
+              <td><span class="badge bg-danger">{{ s.EnBuyuk }}</span></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Fay -->
+  <div class="col-md-4">
+    <div class="card-stat h-100">
+      <div class="card-header">Fay Hatti Analizi</div>
+      <div style="max-height:350px;overflow-y:auto;">
+        <table class="table table-hover table-sm mb-0">
+          <thead class="table-dark"><tr><th>Fay Adi</th><th>Deprem</th><th>Max</th></tr></thead>
+          <tbody>
+            {% for f in fay %}
+            <tr>
+              <td style="font-size:.82rem;">{{ f.FayAdi }}</td>
+              <td>{{ f.ToplamDepremSayisi }}</td>
+              <td><span class="badge bg-danger">{{ f.MaksimumBuyukluk }}</span></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Aylık -->
+<div class="card-stat">
+  <div class="card-header d-flex align-items-center justify-content-between">
+    <span>Aylik Ozet — {{ secili_yil }}</span>
+    <form method="get" class="d-flex gap-2 mb-0">
+      <input type="number" name="yil" value="{{ secili_yil }}" min="1964" max="2024"
+             class="form-control form-control-sm" style="width:90px;">
+      <button type="submit" class="btn btn-sm btn-danger">Git</button>
+    </form>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover table-sm mb-0">
+      <thead class="table-dark">
+        <tr><th>Ay</th><th>Deprem Sayisi</th><th>En Buyuk</th><th>Ortalama</th><th>Mw5+ Sayisi</th></tr>
+      </thead>
+      <tbody>
+        {% set aylar = ['','Ocak','Subat','Mart','Nisan','Mayis','Haziran','Temmuz','Agustos','Eylul','Ekim','Kasim','Aralik'] %}
+        {% for a in aylik %}
+        <tr>
+          <td>{{ aylar[a.Ay] }}</td>
+          <td>{{ a.DepremSayisi }}</td>
+          <td><span class="badge bg-danger">{{ a.EnBuyuk }}</span></td>
+          <td>{{ a.Ortalama }}</td>
+          <td>{{ a.BuyukDepremSayisi }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="text-center py-3" style="color:#555;">Bu yil icin veri yok.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

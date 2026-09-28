@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+{% block title %}Kişisel Afet Rehberi — DepremDB{% endblock %}
+{% block page_title %}Kişisel Afet Rehberim{% endblock %}
+
+{% block content %}
+<style>
+  .action-card {
+    background: #1a1a2e;
+    border: 1px solid #2a2a4a;
+    border-radius: 16px;
+    padding: 1.5rem;
+    height: 100%;
+    transition: transform 0.2s;
+  }
+  .action-card:hover { transform: translateY(-5px); }
+  
+  .form-check-input:checked { background-color: #198754; border-color: #198754; }
+  .checklist-item {
+    background: #16213e; padding: 12px; border-radius: 8px; margin-bottom: 8px;
+    border: 1px solid #2a2a4a; display: flex; align-items: center; cursor: pointer;
+  }
+  .checklist-item:hover { border-color: #e94560; }
+  
+  .btn-sos {
+    background: radial-gradient(circle, #e94560 0%, #c73652 100%);
+    color: white; border: none; width: 120px; height: 120px; border-radius: 50%;
+    font-size: 1.2rem; font-weight: bold; box-shadow: 0 0 20px rgba(233,69,96,0.5);
+    transition: all 0.2s; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  }
+  .btn-sos:hover { transform: scale(1.05); box-shadow: 0 0 30px rgba(233,69,96,0.8); }
+  .btn-sos i { font-size: 2.5rem; margin-bottom: 5px; }
+</style>
+
+<div class="row g-4">
+  <div class="col-md-5">
+    <div class="action-card text-center d-flex flex-column align-items-center justify-content-center mb-4" style="border-top: 4px solid #e94560;">
+      <h5 class="text-white mb-2">Sarsıntı mı Hissettiniz?</h5>
+      <p class="text-muted" style="font-size: 0.85rem;">Bölgenizdeki durumu kriz merkezine anında iletin.</p>
+      
+      <button class="btn-sos mt-3 mb-3" data-bs-toggle="modal" data-bs-target="#bildirimModal">
+        <i class="bi bi-broadcast"></i> BİLDİR
+      </button>
+      <small class="text-success"><i class="bi bi-shield-check"></i> Raporunuz veritabanına işlenecektir.</small>
+    </div>
+
+    <div class="action-card text-center">
+      <div class="mb-3" style="font-size: 2rem; color: #25D366;"><i class="bi bi-whatsapp"></i></div>
+      <h6 class="text-white">Aileme "Güvendeyim" Mesajı At</h6>
+      <p class="text-muted" style="font-size: 0.8rem;">Acil durumda şebekeler çökmeden önce tek tıkla güvende olduğunuzu WhatsApp'tan bildirin.</p>
+      <a href="https://wa.me/?text=Şu an güvendeyim. Bulunduğum bölgede sarsıntı oldu ancak iyi durumdayım. Lütfen panik yapmayın, hatları meşgul etmemek için mesaj atıyorum." target="_blank" class="btn btn-outline-success btn-sm px-4 rounded-pill">
+        <i class="bi bi-send"></i> Mesajı Gönder
+      </a>
+    </div>
+  </div>
+
+  <div class="col-md-7">
+    <div class="action-card">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="text-white mb-0"><i class="bi bi-backpack text-warning"></i> Deprem Çantası & Hazırlık</h5>
+        <span class="badge bg-primary fs-6" id="skorBadge">%0</span>
+      </div>
+      
+      <p class="text-muted" style="font-size: 0.85rem;">Olası bir afet durumuna ne kadar hazırsınız? Tamamladığınız adımları işaretleyin.</p>
+      
+      <div class="progress mb-4" style="height: 10px; background-color: #2a2a4a;">
+        <div id="hazirlikBari" class="progress-bar bg-warning progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%;"></div>
+      </div>
+
+      <div class="hazirlik-listesi">
+        <label class="checklist-item"><input class="form-check-input me-3 hazirlik-check" type="checkbox" value="1"><div class="text-white">E-Devlet üzerinden en yakın Toplanma Alanımı öğrendim.</div></label>
+        <label class="checklist-item"><input class="form-check-input me-3 hazirlik-check" type="checkbox" value="1"><div class="text-white">Evimdeki ağır eşyaları (dolap, televizyon) duvara sabitledim.</div></label>
+        <label class="checklist-item"><input class="form-check-input me-3 hazirlik-check" type="checkbox" value="1"><div class="text-white">Çantamda İlk Yardım Kiti ve düdük bulunuyor.</div></label>
+        <label class="checklist-item"><input class="form-check-input me-3 hazirlik-check" type="checkbox" value="1"><div class="text-white">En az 3 günlük su ve bozulmayan kuru gıda stoğum var.</div></label>
+        <label class="checklist-item"><input class="form-check-input me-3 hazirlik-check" type="checkbox" value="1"><div class="text-white">El feneri ve yedek pillerim kolay ulaşılabilir bir yerde.</div></label>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="bildirimModal" tabindex="-1" data-bs-theme="dark">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="background-color: #1a1a2e; border: 1px solid #2a2a4a;">
+      <div class="modal-header" style="border-bottom: 1px solid #2a2a4a;">
+        <h5 class="modal-title text-white"><i class="bi bi-broadcast text-danger"></i> Sarsıntı Bildirimi</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body text-white">
+        <p class="text-muted" style="font-size: 0.9rem;">Gönderdiğiniz veri, kitle kaynaklı hasar ısı haritasını oluşturmak için araştırmacılar tarafından kullanılacaktır.</p>
+        
+        <label class="form-label text-warning">Sarsıntının Şiddeti Nasıldı?</label>
+        <select id="siddetSecim" class="form-select bg-dark text-white mb-3" style="border-color: #2a2a4a;">
+          <option>Hafif (Sadece avizeler sallandı)</option>
+          <option>Orta (Eşyalar düştü, yürümek zordu)</option>
+          <option>Şiddetli (Ayakta durulamadı, ağır hasar var)</option>
+        </select>
+
+        <label class="form-label text-warning">Bulunduğunuz Binanın Durumu Nedir?</label>
+        <select id="binaSecim" class="form-select bg-dark text-white mb-3" style="border-color: #2a2a4a;">
+          <option>Gözle görülür bir hasar yok / Güvenli.</option>
+          <option>Duvarlarda sıva döküldü / Ufak çatlaklar var.</option>
+          <option>Kolonlarda hasar veya ağır yıkım tehlikesi var!</option>
+          <option>Sarsıntı anında açık alandaydım (Sokak/Park).</option>
+        </select>
+        
+        <label class="form-label text-warning">Ekstra Belirtmek İstediğiniz Durum (Opsiyonel)</label>
+        <textarea id="ekstraNotGirdisi" class="form-select bg-dark text-white" rows="2" placeholder="Örn: Elektrikler kesildi, yollar kapalı..." style="border-color: #2a2a4a; resize: none;"></textarea>
+      </div>
+      <div class="modal-footer" style="border-top: 1px solid #2a2a4a;">
+        <button type="button" class="btn btn-outline-secondary" id="kapatBtn" data-bs-dismiss="modal">İptal</button>
+        <button type="button" class="btn btn-danger" onclick="bildirimGonderildi()">
+          <span id="btnMetin">Raporu Merkeze İlet</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+  // --- ÇANTA ANİMASYONU ---
+  const checkboxes = document.querySelectorAll('.hazirlik-check');
+  const hazirlikBari = document.getElementById('hazirlikBari');
+  const skorBadge = document.getElementById('skorBadge');
+  const toplam = checkboxes.length;
+
+  checkboxes.forEach(box => {
+    box.addEventListener('change', () => {
+      let isaretli = document.querySelectorAll('.hazirlik-check:checked').length;
+      let yuzde = Math.round((isaretli / toplam) * 100);
+      hazirlikBari.style.width = yuzde + '%';
+      skorBadge.innerText = '%' + yuzde;
+      
+      if(yuzde === 100) {
+        hazirlikBari.className = "progress-bar bg-success progress-bar-striped progress-bar-animated";
+        skorBadge.className = "badge bg-success fs-6";
+      } else if(yuzde > 40) {
+        hazirlikBari.className = "progress-bar bg-warning progress-bar-striped progress-bar-animated";
+        skorBadge.className = "badge bg-warning text-dark fs-6";
+      } else {
+        hazirlikBari.className = "progress-bar bg-danger progress-bar-striped progress-bar-animated";
+        skorBadge.className = "badge bg-danger fs-6";
+      }
+    });
+  });
+
+ // --- GERÇEK BİLDİRİM VE KONUM GÖNDERME İŞLEMİ ---
+  function bildirimGonderildi() {
+    const siddet = document.getElementById('siddetSecim').value;
+    const bina = document.getElementById('binaSecim').value;
+    const notDegeri = document.getElementById('ekstraNotGirdisi').value;
+    const btnMetin = document.getElementById('btnMetin');
+
+    btnMetin.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Konum Bulunuyor...';
+
+    // 1. Tarayıcıdan GPS Konumunu İste
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            function(position) {
+                // Konum bulundu, verileri gönder
+                verileriGonder(position.coords.latitude, position.coords.longitude);
+            },
+            function(error) {
+                // Kullanıcı konum izni vermedi veya hata oldu, konumsuz gönder
+                console.warn("Konum alınamadı:", error);
+                verileriGonder(null, null);
+            },
+            { enableHighAccuracy: true, timeout: 5000 }
+        );
+    } else {
+        // Tarayıcı desteklemiyorsa konumsuz gönder
+        verileriGonder(null, null);
+    }
+
+    // 2. Verileri Sunucuya Postalayan Alt Fonksiyon
+    function verileriGonder(enlemDegeri, boylamDegeri) {
+        btnMetin.innerHTML = '<span class="spinner-border spinner-border-sm"></span> İletiliyor...';
+
+        const veriPaketi = {
+            siddet: siddet,
+            binaDurumu: bina,
+            ekstraNot: notDegeri,
+            enlem: enlemDegeri,
+            boylam: boylamDegeri
+        };
+
+        fetch('/api/bildirim-gonder', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(veriPaketi)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.durum === "basarili") {
+                Swal.fire({ title: 'Rapor İletildi', text: data.mesaj, icon: 'success', background: '#1a1a2e', color: '#fff', confirmButtonColor: '#198754' });
+                document.getElementById('kapatBtn').click();
+                document.getElementById('ekstraNotGirdisi').value = "";
+            } else {
+                Swal.fire({ title: 'İşlem Başarısız', text: data.mesaj, icon: 'error', background: '#1a1a2e', color: '#fff', confirmButtonColor: '#e94560' });
+            }
+            btnMetin.innerText = 'Raporu Merkeze İlet';
+        })
+        .catch(hata => {
+            Swal.fire({ title: 'Bağlantı Hatası', text: 'Sunucuya ulaşılamıyor.', icon: 'warning', background: '#1a1a2e', color: '#fff', confirmButtonColor: '#ffc107' });
+            btnMetin.innerText = 'Raporu Merkeze İlet';
+        });
+    }
+  }
+</script>
+{% endblock %}

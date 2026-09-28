@@ -1,0 +1,7 @@
+requests>=2.31.0
+pyodbc>=5.0.0
+tqdm>=4.66.0
+python-dotenv>=1.0.0
+flask>=3.0.0
+google-auth>=2.28.0
+google-auth-oauthlib>=1.2.0

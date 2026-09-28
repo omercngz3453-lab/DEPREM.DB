@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}Depremler — DepremDB{% endblock %}
+{% block page_title %}Deprem Listesi{% endblock %}
+{% block content %}
+
+<div class="card-stat mb-3 p-3">
+  <form class="row g-2 align-items-end" method="get">
+    <div class="col-auto">
+      <label class="form-label" style="color:#9090b0;font-size:.8rem;">BASLANGIC</label>
+      <input type="date" name="bas" class="form-control form-control-sm" value="{{ bas }}">
+    </div>
+    <div class="col-auto">
+      <label class="form-label" style="color:#9090b0;font-size:.8rem;">BITIS</label>
+      <input type="date" name="bitis" class="form-control form-control-sm" value="{{ bitis }}">
+    </div>
+    <div class="col-auto">
+      <label class="form-label" style="color:#9090b0;font-size:.8rem;">MIN MW</label>
+      <input type="number" step="0.1" min="3.5" max="9.9" name="min_mw"
+             class="form-control form-control-sm" value="{{ min_mw }}" style="width:75px;">
+    </div>
+    <div class="col-auto">
+      <label class="form-label" style="color:#9090b0;font-size:.8rem;">SEHİR</label>
+      <select name="sehir" class="form-select form-select-sm" style="width:140px;">
+        <option value="">Tumu</option>
+        {% for s in sehir_listesi %}
+        <option value="{{ s.Sehir }}" {% if s.Sehir == sehir %}selected{% endif %}>{{ s.Sehir }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-auto">
+      <label class="form-label" style="color:#9090b0;font-size:.8rem;">SIRALAMA</label>
+      <select name="siralama" class="form-select form-select-sm" style="width:160px;">
+        <option value="tarih" {% if siralama == 'tarih' %}selected{% endif %}>Tarihe Gore</option>
+        <option value="buyukluk" {% if siralama == 'buyukluk' %}selected{% endif %}>Buyuklige Gore</option>
+        <option value="hasar" {% if siralama == 'hasar' %}selected{% endif %}>Hasar Miktarina Gore</option>
+      </select>
+    </div>
+    <div class="col-auto align-self-end">
+      <button type="submit" class="btn btn-danger btn-sm">Filtrele</button>
+    </div>
+    <div class="col-auto align-self-end">
+      <a href="/depremler" class="btn btn-outline-secondary btn-sm">Temizle</a>
+    </div>
+    <div class="col-auto align-self-end">
+      <a href="/harita" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-map"></i> Harita
+      </a>
+    </div>
+  </form>
+</div>
+
+<div class="card-stat">
+  <div class="table-responsive">
+    <table class="table table-hover table-sm mb-0">
+      <thead class="table-dark">
+        <tr>
+          <th>#</th>
+          <th>Tarih/Saat</th>
+          <th>Sehir</th>
+          <th>Enlem</th>
+          <th>Boylam</th>
+          <th>Derinlik</th>
+          <th>Mw</th>
+          <th>Tip</th>
+          <th>Fay</th>
+          {% if siralama == 'hasar' %}
+          <th>Olu</th>
+          <th>Yarali</th>
+          <th>Yikilan</th>
+          {% endif %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for d in depremler %}
+        <tr>
+          <td style="color:#555;">{{ d.DepremID }}</td>
+          <td style="font-size:.82rem;">{{ d.TarihSaat }}</td>
+          <td><span style="color:#e94560;font-weight:500;">{{ d.Sehir or '-' }}</span></td>
+          <td style="font-size:.82rem;">{{ "%.4f"|format(d.Enlem) }}</td>
+          <td style="font-size:.82rem;">{{ "%.4f"|format(d.Boylam) }}</td>
+          <td style="font-size:.82rem;">{{ d.Derinlik }} km</td>
+          <td>
+            <span class="badge
+              {% if d.BuyuklukMw >= 7 %}bg-danger
+              {% elif d.BuyuklukMw >= 6 %}bg-warning text-dark
+              {% elif d.BuyuklukMw >= 5 %}bg-primary
+              {% else %}bg-secondary{% endif %}">
+              {{ d.BuyuklukMw }}
+            </span>
+          </td>
+          <td style="font-size:.82rem;">{{ d.Tip or '-' }}</td>
+          <td style="font-size:.78rem;color:#9090b0;">{{ d.FayAdi or '-' }}</td>
+          {% if siralama == 'hasar' %}
+          <td class="text-danger fw-bold">{{ d.ToplamOlum }}</td>
+          <td class="text-warning">{{ d.ToplamYarali }}</td>
+          <td style="color:#9090b0;">{{ d.ToplamBina }}</td>
+          {% endif %}
+        </tr>
+        {% else %}
+        <tr><td colspan="12" class="text-center py-5" style="color:#555;">Kayit bulunamadi.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+<p style="color:#555;font-size:.8rem;" class="mt-2">{{ depremler|length }} kayit listeleniyor</p>
+{% endblock %}

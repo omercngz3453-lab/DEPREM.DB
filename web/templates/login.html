@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block login_content %}
+<div class="min-vh-100 d-flex align-items-center justify-content-center" style="background:linear-gradient(135deg,#0f0f1a,#1a1a2e);">
+  <div style="width:420px;">
+    <div class="text-center mb-4">
+      <i class="bi bi-activity" style="font-size:3rem;color:#e94560;"></i>
+      <h2 class="fw-bold text-white mt-2">DepremDB</h2>
+      <p style="color:#9090b0;">Turkiye Deprem Izleme Sistemi</p>
+    </div>
+    <div class="card-stat p-4">
+      <form method="post">
+        <div class="mb-3">
+          <label class="form-label" style="color:#9090b0;font-size:.85rem;">GMAIL ADRESİ</label>
+          <input type="email" name="gmail" class="form-control" placeholder="ornek@gmail.com" required>
+        </div>
+        <div class="mb-4">
+          <label class="form-label" style="color:#9090b0;font-size:.85rem;">SİFRE</label>
+          <input type="password" name="sifre" class="form-control" placeholder="••••••" required>
+        </div>
+        <button type="submit" class="btn btn-danger w-100 py-2 fw-bold">Giris Yap</button>
+      </form>
+      <hr style="border-color:#2a2a4a;margin:1.5rem 0;">
+      <div class="text-center">
+        <span style="color:#9090b0;font-size:.85rem;">Hesabin yok mu?</span>
+        <a href="/kayit" class="btn btn-outline-secondary w-100 mt-2">Kayit Ol</a>
+      </div>
+    </div>
+    <div class="text-center mt-3">
+      <small style="color:#444;">Roller: Kullanici / Arastirmaci / Afet Yoneticisi / Sistem Yoneticisi</small>
+    </div>
+  </div>
+</div>
+{% endblock %}

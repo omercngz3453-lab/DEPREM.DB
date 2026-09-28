@@ -1,0 +1,242 @@
+{% extends "base.html" %}
+{% block title %}Risk Analizi — DepremDB{% endblock %}
+{% block page_title %}Risk Analizi{% endblock %}
+{% block content %}
+
+<ul class="nav nav-tabs mb-4" id="riskTabs">
+  <li class="nav-item"><a class="nav-link {% if aktif_tab == 'risk' or not aktif_tab %}active{% endif %}" data-bs-toggle="tab" href="#riskTab">Yuksek Riskli Bolgeler</a></li>
+  <li class="nav-item"><a class="nav-link {% if aktif_tab == 'zemin' %}active{% endif %}" data-bs-toggle="tab" href="#zeminTab">Zemin ve Tehlike</a></li>
+  <li class="nav-item"><a class="nav-link {% if aktif_tab == 'etki' %}active{% endif %}" data-bs-toggle="tab" href="#etkilTab">Deprem Etki Analizi</a></li>
+</ul>
+
+<div class="tab-content">
+
+  <!-- YÜKSEK RİSKLİ BÖLGELER -->
+  <div class="tab-pane fade {% if aktif_tab == 'risk' or not aktif_tab %}show active{% endif %}" id="riskTab">
+    <div class="card-stat mb-3 p-3">
+      <form class="row g-2 align-items-end" method="get" action="/risk">
+        <input type="hidden" name="aktif_tab" value="risk">
+        <div class="col-auto">
+          <input type="text" name="il" class="form-control form-control-sm"
+                 placeholder="Il filtrele..." value="{{ il or '' }}">
+        </div>
+        <div class="col-auto">
+          <button type="submit" class="btn btn-danger btn-sm">Filtrele</button>
+        </div>
+        <div class="col-auto">
+          <a href="/risk?aktif_tab=risk" class="btn btn-outline-secondary btn-sm">Temizle</a>
+        </div>
+      </form>
+    </div>
+
+    <div class="row g-3 mb-3">
+      <div class="col-md-3">
+        <div class="card-stat p-3 text-center">
+          <i class="bi bi-exclamation-triangle" style="font-size:1.8rem;color:#dc3545;"></i>
+          <div class="fs-2 fw-bold text-white mt-1">{{ yuksek|length }}</div>
+          <div style="color:#9090b0;font-size:.8rem;">Yuksek Riskli Bolge</div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card-stat p-3 text-center">
+          <i class="bi bi-graph-up" style="font-size:1.8rem;color:#ffc107;"></i>
+          <div class="fs-2 fw-bold text-white mt-1">
+            {% if yuksek %}{{ yuksek[0].RiskSkoru }}{% else %}-{% endif %}
+          </div>
+          <div style="color:#9090b0;font-size:.8rem;">En Yuksek Risk Skoru</div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card-stat p-3 text-center">
+          <i class="bi bi-geo-alt" style="font-size:1.8rem;color:#0dcaf0;"></i>
+          <div class="fs-2 fw-bold text-white mt-1">
+            {% if yuksek %}{{ yuksek[0].Il }}{% else %}-{% endif %}
+          </div>
+          <div style="color:#9090b0;font-size:.8rem;">En Riskli Il</div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card-stat p-3 text-center">
+          <i class="bi bi-people" style="font-size:1.8rem;color:#198754;"></i>
+          <div class="fs-2 fw-bold text-white mt-1">
+            {% set toplam_nufus = namespace(val=0) %}
+            {% for r in yuksek %}
+              {% if r.Nufus %}{% set toplam_nufus.val = toplam_nufus.val + r.Nufus %}{% endif %}
+            {% endfor %}
+            {{ "{:,}".format(toplam_nufus.val) }}
+          </div>
+          <div style="color:#9090b0;font-size:.8rem;">Risk Altindaki Nufus</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-stat">
+      <div class="card-header"><i class="bi bi-exclamation-triangle text-danger"></i> Yuksek Riskli Yerlesimler (Risk > 0.70)</div>
+      <div class="table-responsive">
+        <table class="table table-hover table-sm mb-0">
+          <thead class="table-dark">
+            <tr><th>Il</th><th>Ilce</th><th>Risk Skoru</th><th>PGA (g)</th><th>Tehlike</th><th>Zemin</th><th>Vs30</th><th>Nufus</th></tr>
+          </thead>
+          <tbody>
+            {% for r in yuksek %}
+            <tr>
+              <td style="color:#e94560;font-weight:500;">{{ r.Il }}</td>
+              <td>{{ r.Ilce }}</td>
+              <td>
+                <div class="progress" style="height:18px;min-width:90px;">
+                  <div class="progress-bar
+                    {% if r.RiskSkoru >= 0.85 %}bg-danger
+                    {% elif r.RiskSkoru >= 0.75 %}bg-warning
+                    {% else %}bg-primary{% endif %}"
+                    style="width:{{ (r.RiskSkoru*100)|int }}%;">
+                    {{ r.RiskSkoru }}
+                  </div>
+                </div>
+              </td>
+              <td>{{ r.PGA }}g</td>
+              <td>
+                <span class="badge
+                  {% if r.TehlikeSeviyesi == 'Yuksek' %}bg-danger
+                  {% elif r.TehlikeSeviyesi == 'Orta' %}bg-warning text-dark
+                  {% else %}bg-secondary{% endif %}">
+                  {{ r.TehlikeSeviyesi }}
+                </span>
+              </td>
+              <td><span class="badge bg-secondary">{{ r.ZeminSinifi }}</span></td>
+              <td style="font-size:.82rem;">{{ r.Vs30 }} m/s</td>
+              <td style="font-size:.82rem;">{{ "{:,}".format(r.Nufus) if r.Nufus else '-' }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="8" class="text-center py-4" style="color:#555;">Veri bulunamadi.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ZEMİN VE TEHLİKE -->
+  <div class="tab-pane fade {% if aktif_tab == 'zemin' %}show active{% endif %}" id="zeminTab">
+    <div class="card-stat">
+      <div class="card-header"><i class="bi bi-layers text-info"></i> Zemin Sinifi ve Tehlike Parametreleri</div>
+      <div class="table-responsive">
+        <table class="table table-hover table-sm mb-0">
+          <thead class="table-dark">
+            <tr><th>Il</th><th>Ilce</th><th>Zemin Sinifi</th><th>Vs30 (m/s)</th><th>PGA (g)</th><th>Tehlike Seviyesi</th><th>Risk Skoru</th></tr>
+          </thead>
+          <tbody>
+            {% for z in zemin %}
+            <tr>
+              <td style="color:#e94560;font-weight:500;">{{ z.Il }}</td>
+              <td>{{ z.Ilce }}</td>
+              <td>
+                <span class="badge
+                  {% if z.ZeminSinifi in ['ZE','ZF'] %}bg-danger
+                  {% elif z.ZeminSinifi == 'ZD' %}bg-warning text-dark
+                  {% elif z.ZeminSinifi == 'ZC' %}bg-primary
+                  {% else %}bg-success{% endif %}">
+                  {{ z.ZeminSinifi }}
+                </span>
+              </td>
+              <td>{{ z.Vs30 }} m/s</td>
+              <td>{{ z.PGA }}g</td>
+              <td>
+                <span class="badge
+                  {% if z.TehlikeSeviyesi == 'Yuksek' %}bg-danger
+                  {% elif z.TehlikeSeviyesi == 'Orta' %}bg-warning text-dark
+                  {% else %}bg-secondary{% endif %}">
+                  {{ z.TehlikeSeviyesi }}
+                </span>
+              </td>
+              <td>
+                <div class="progress" style="height:16px;min-width:80px;">
+                  <div class="progress-bar
+                    {% if z.RiskSkoru >= 0.7 %}bg-danger
+                    {% elif z.RiskSkoru >= 0.5 %}bg-warning
+                    {% else %}bg-success{% endif %}"
+                    style="width:{{ (z.RiskSkoru*100)|int }}%;">
+                    {{ z.RiskSkoru }}
+                  </div>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- DEPREM ETKİ ANALİZİ -->
+  <div class="tab-pane fade {% if aktif_tab == 'etki' %}show active{% endif %}" id="etkilTab">
+    <div class="card-stat mb-3 p-3">
+      <form class="row g-2 align-items-end" method="get" action="/risk">
+        <input type="hidden" name="aktif_tab" value="etki">
+        <div class="col-auto">
+          <label style="color:#9090b0;font-size:.8rem;">DEPREM ID</label>
+          <input type="number" name="deprem_id" class="form-control form-control-sm"
+                 placeholder="Deprem ID gir..." value="{{ deprem_id or '' }}" style="width:160px;">
+        </div>
+        <div class="col-auto align-self-end">
+          <button type="submit" class="btn btn-danger btn-sm">Analiz Et</button>
+        </div>
+        <div class="col-auto align-self-end">
+          <a href="/risk?aktif_tab=etki" class="btn btn-outline-secondary btn-sm">Temizle</a>
+        </div>
+      </form>
+      <small style="color:#555;" class="mt-2 d-block">
+        Ipucu: Deprem ID'sini Deprem Listesi sayfasindan bulabilirsiniz.
+      </small>
+    </div>
+
+    {% if etki %}
+    <div class="card-stat mb-3 p-3">
+      <div class="text-white fw-bold mb-1">
+        Deprem #{{ deprem_id }} — Mw {{ etki[0].BuyuklukMw }} — {{ etki[0].TarihSaat }}
+      </div>
+      <small style="color:#9090b0;">Fay: {{ etki[0].FayAdi or '-' }}</small>
+    </div>
+    <div class="card-stat">
+      <div class="card-header"><i class="bi bi-geo-alt text-warning"></i> Etkilenen Yerlesimler</div>
+      <div class="table-responsive">
+        <table class="table table-hover table-sm mb-0">
+          <thead class="table-dark">
+            <tr><th>Il</th><th>Ilce</th><th>Nufus</th><th>Etki Seviyesi</th><th>Olu</th><th>Yarali</th><th>Yikilan Bina</th></tr>
+          </thead>
+          <tbody>
+            {% for e in etki %}
+            <tr>
+              <td style="color:#e94560;font-weight:500;">{{ e.Il }}</td>
+              <td>{{ e.Ilce }}</td>
+              <td style="font-size:.82rem;">{{ "{:,}".format(e.Nufus) if e.Nufus else '-' }}</td>
+              <td>
+                <span class="badge
+                  {% if e.EtkiSeviyesi == 'Siddetli' %}bg-danger
+                  {% elif e.EtkiSeviyesi == 'Orta' %}bg-warning text-dark
+                  {% else %}bg-secondary{% endif %}">
+                  {{ e.EtkiSeviyesi or '-' }}
+                </span>
+              </td>
+              <td class="text-danger fw-bold">{{ e.Olum }}</td>
+              <td class="text-warning">{{ e.Yarali }}</td>
+              <td style="color:#9090b0;">{{ e.YikilanBina }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% elif deprem_id %}
+    <div class="card-stat p-4 text-center" style="color:#555;">
+      Deprem #{{ deprem_id }} icin Deprem_Yerlesim tablosunda etki verisi bulunamadi.
+      <br><small>Bu deprem icin etki kaydi girilmemis olabilir.</small>
+    </div>
+    {% else %}
+    <div class="card-stat p-4 text-center" style="color:#555;">
+      Yukaridan bir Deprem ID girerek analiz baslatin.
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}
