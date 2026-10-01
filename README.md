@@ -98,14 +98,20 @@ Projeyi yerel ortamınızda çalıştırmak için aşağıdaki adımları izleyi
 
 **1. Projeyi Klonlayın:**
 
-git clone [https://github.com/KULLANICI_ADI/depremdb.git](https://github.com/omercngz345/depremdb.git)
-cd depremdb
-2. Sanal Ortam ve Bağımlılıklar (Windows):
+git clone https://github.com/omercngz345/depremdb.git cd depremdb   cd depremdb
+2. Sanal Ortamı Oluşturun
 
+Windows PowerShell:
 
 python -m venv .venv
+
+Sanal ortamı aktif edin:
+
 .venv\Scripts\activate
-pip install -r requirements.txt
+
+Başarılı olduğunda terminalin başında:
+
+(.venv)
 3. Veritabanının Hazırlanması:
 
 SQL Server Management Studio (SSMS) açın.
