@@ -98,7 +98,7 @@ Projeyi yerel ortamınızda çalıştırmak için aşağıdaki adımları izleyi
 
 **1. Projeyi Klonlayın:**
 
-git clone [https://github.com/KULLANICI_ADI/depremdb.git](https://github.com/KULLANICI_ADI/depremdb.git)
+git clone [https://github.com/KULLANICI_ADI/depremdb.git](https://github.com/omercngz345/depremdb.git)
 cd depremdb
 2. Sanal Ortam ve Bağımlılıklar (Windows):
 
@@ -235,7 +235,7 @@ DEPREM DB
 │
 └── README.txt
 │
-└── .gtiignore
+└── .gitignore
 │
 └── .env.example
 
