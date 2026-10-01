@@ -98,7 +98,7 @@ Projeyi yerel ortamınızda çalıştırmak için aşağıdaki adımları izleyi
 
 **1. Projeyi Klonlayın:**
 
-git clone https://github.com/omercngz345/depremdb.git cd depremdb   cd depremdb
+git clone https://github.com/omercngz345/DEPREM.DB.git cd depremdb   cd depremdb
 2. Sanal Ortamı Oluşturun
 
 Windows PowerShell:
